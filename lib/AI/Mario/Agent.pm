@@ -1,7 +1,7 @@
 package AI::Mario::Agent;
 use Moose::Role;
 
-requires qw( reset update name );
+requires qw( reset update name fitness );
 
 has left => (
     is       => 'rw',
@@ -40,6 +40,14 @@ has run => (
 
 sub actions {
     return map { $_[0]->$_ } qw( left right duck jump run );
+}
+
+sub report_fitness {
+    my ($self, $f) = @_;
+
+    print $f->report;
+
+    $self->fitness($f);
 }
 
 1;

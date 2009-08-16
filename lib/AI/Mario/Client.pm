@@ -4,6 +4,7 @@ use Moose;
 use POE qw(Component::Client::TCP Filter::Stream);
 use POE::Declarative;
 
+use AI::Mario::Fitness;
 use AI::Mario::Observation;
 
 has hostname => (

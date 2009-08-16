@@ -37,4 +37,6 @@ sub update {
     }
 }
 
+sub fitness {}
+
 1;

@@ -45,7 +45,8 @@ sub parse_observation_message {
     my @data = split /\s+/, $message;
 
     # Message type, we expect this to always be "O" at this time
-    shift @data;
+    my $prefix = shift @data;
+    die "prefix [$prefix] is not understood\n" unless $prefix eq 'O';
 
     $args{may_jump}    = shift(@data) eq 'true';
     $args{is_grounded} = shift(@data) eq 'true';
