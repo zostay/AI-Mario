@@ -1,4 +1,4 @@
-package Observation;
+package AI::Mario::Observation;
 use Moose;
 
 use constant observation_size => 22;

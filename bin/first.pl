@@ -2,16 +2,19 @@
 use strict;
 use warnings;
 
+use FindBin;
+use POE qw(Component::Client::TCP Filter::Stream);
+use POE::Declarative;
+
+use lib "$FindBin::Bin/../lib";
+
+use AI::Mario::Observation;
+
 use constant LEFT  => 0;
 use constant RIGHT => 1;
 use constant DUCK  => 2;
 use constant JUMP  => 3;
 use constant RUN   => 4;
-
-use POE qw(Component::Client::TCP Filter::Stream);
-use POE::Declarative;
-
-use Observation;
 
 my $client_name = 'FirstPerl';
 my $need_reset  = 1;
@@ -59,7 +62,7 @@ on received => sub {
         $need_reset = 0;
     }
 
-    my $o = Observation->new($_[ARG1]);
+    my $o = AI::Mario::Observation->new($_[ARG1]);
 
     if ($jumping and $o->is_grounded) {
         print "Ending jump.\n";
