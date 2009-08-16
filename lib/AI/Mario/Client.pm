@@ -6,6 +6,20 @@ use POE::Declarative;
 
 use AI::Mario::Observation;
 
+has hostname => (
+    is        => 'ro',
+    isa       => 'Str',
+    required  => 1,
+    default   => 'localhost',
+);
+
+has port => (
+    is        => 'ro',
+    isa       => 'Int',
+    required  => 1,
+    default   => 4242,
+);
+
 has agent => (
     is        => 'rw',
     does      => 'AI::Mario::Agent',
@@ -52,8 +66,8 @@ on _start => run {
 
     POE::Component::Client::TCP->new(
         Alias         => 'mario',
-        RemoteAddress => "localhost",
-        RemotePort    => 4242,
+        RemoteAddress => $self->hostname,
+        RemotePort    => $self->port,
         Filter        => 'POE::Filter::Stream',
         Connected     => sub { 
             post(agent => 'connected', $_[HEAP]{server}) 
