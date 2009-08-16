@@ -47,8 +47,6 @@ on connected => sub {
     tell_mario($agent->name);
 };
 
-my $jumping = 0;
-
 on received => sub {
     if ($need_reset) {
         print "Sending reset... [$server_config]\n";
