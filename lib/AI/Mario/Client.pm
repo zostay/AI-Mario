@@ -76,6 +76,9 @@ on _start => run {
         ServerInput   => sub { 
             post(agent => 'received', $_[HEAP]{server}, $_[ARG0]) 
         },
+        Disconnected  => sub {
+            post(agent => 'disconnected');
+        },
     );
 };
 
@@ -91,17 +94,42 @@ on received => sub {
     my $self = get(OBJECT);
     my $config = $self->server_config;
 
-    if ($self->need_reset) {
+    return if $self->is_disconnected;
+
+    # Send a reset to update the server config
+    if ($self->need_reset or $_[ARG1] =~ /^FIT\b/) {
         print "Sending reset... [$config]\n";
         tell_mario("reset $config");
         $self->need_reset(0);
     }
 
-    my $o = AI::Mario::Observation->new($_[ARG1]);
     my $agent = $self->agent;
+
+    # Hello message from server
+    if ($_[ARG1] =~ /^Server:/) {
+        print $_[ARG1], "\n";
+        return;
+    }
+
+    # Final message from the server
+    elsif ($_[ARG1] =~ /^FIT\b/) {
+        my $f = AI::Mario::Fitness->new($_[ARG1]);
+        $agent->report_fitness($f);
+        return;
+    }
+
+    my $o = AI::Mario::Observation->new($_[ARG1]);
 
     $agent->update($o);
     tell_mario(join '', $agent->actions);
+};
+
+on disconnected => sub {
+    my $self = get(OBJECT);
+
+    print "Reconnecting.\n";
+    $self->need_reset(1);
+    yield(reconnect => 1);
 };
 
 sub connect {
