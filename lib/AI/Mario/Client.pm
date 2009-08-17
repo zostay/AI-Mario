@@ -24,7 +24,12 @@ has port => (
 has agent => (
     is        => 'rw',
     does      => 'AI::Mario::Agent',
-    predicate => 'has_agent',
+    lazy      => 1,
+    default   => sub {
+        my $self = shift;
+        my $meta = Class::MOP::load_class($self->agent_class);
+        return $meta->new_object($self->agent_options);
+    },
 );
 
 has agent_class => (
@@ -32,6 +37,38 @@ has agent_class => (
     isa       => 'Str',
     required  => 1,
     default   => 'AI::Mario::Agent::Simple',
+);
+
+has agent_options => (
+    is        => 'ro',
+    isa       => 'HashRef',
+    required  => 1,
+    default   => sub { {} },
+);
+
+has config => (
+    is        => 'rw',
+    does      => 'AI::Mario::Config',
+    lazy      => 1,
+    default   => sub {
+        my $self = shift;
+        my $meta = Class::MOP::load_class($self->config_class);
+        return $meta->new_object($self->config_options);
+    },
+);
+
+has config_class => (
+    is        => 'ro',
+    isa       => 'Str',
+    required  => 1,
+    default   => 'AI::Mario::Config::Basic',
+);
+
+has config_options => (
+    is        => 'ro',
+    isa       => 'HashRef',
+    required  => 1,
+    default   => sub { {} },
 );
 
 has need_reset => (
@@ -48,20 +85,12 @@ has server_config => (
     default   => '-maxFPS on -ld 0 -lt 0 -mm 2 -ls 1 -tl 100 -pw off -vis on',
 );
 
-sub setup_agent {
-    my $self = shift;
-
-    my $meta = Class::MOP::load_class($self->agent_class);
-    $self->agent($meta->new_object);
-}
-
 sub tell_mario(@) {
     get(ARG0)->put(join '', @_, "\r\n");
 }
 
 on _start => run {
     my $self = get(OBJECT);
-    $self->setup_agent;
 
     get(KERNEL)->alias_set('agent');
 
@@ -92,14 +121,16 @@ on connected => sub {
 
 on received => sub {
     my $self = get(OBJECT);
-    my $config = $self->server_config;
-
-    return if $self->is_disconnected;
 
     # Send a reset to update the server config
     if ($self->need_reset or $_[ARG1] =~ /^FIT\b/) {
-        print "Sending reset... [$config]\n";
-        tell_mario("reset $config");
+        my $config = $self->config;
+        $config->reset;
+
+        my $string = $config->as_string;
+        print "Sending reset... [$string]\n";
+        tell_mario("reset $string");
+
         $self->need_reset(0);
     }
 
