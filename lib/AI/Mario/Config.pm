@@ -13,7 +13,7 @@ has map_zoom_level => (
 has enemies_zoom_level => (
     is        => 'rw',
     isa       => 'Int',
-    default   => 0,
+    default   => 1,
     predicate => 'sets_enemies_zoom_level',
 );
 
