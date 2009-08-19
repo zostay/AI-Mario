@@ -21,12 +21,6 @@ has obstacles => (
     required => 1,
 );
 
-has enemies => (
-    is       => 'ro',
-    isa      => 'ArrayRef[Int]',
-    required => 1,
-);
-
 sub BUILDARGS {
     my $class = shift;
 
@@ -51,7 +45,6 @@ sub parse_observation_message {
     $args{may_jump}    = shift(@data) eq 'true';
     $args{is_grounded} = shift(@data) eq 'true';
     $args{obstacles}   = [ splice @data, 0, observation_size ** 2 ];
-    $args{enemies}     = [ splice @data, 0, observation_size ** 2 ];
 
     return \%args;
 }
