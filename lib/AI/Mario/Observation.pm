@@ -61,4 +61,48 @@ sub show_grid {
     }
     print "\n";
 }
+
+my %obstacles = (
+    '-10' => 'wall-hard',
+    '-11' => 'wall-soft',
+      '1' => 'mario',
+      '2' => 'bad_guys-jump-shoot',
+      '9' => 'bad_guys-shoot',
+     '20' => 'wall-hard-metal',
+     '16' => 'wall-hard-brick',
+     '21' => 'wall-hard-question',
+     '25' => 'weapon-fireball',
+);
+
+sub obstacle_vectors {
+    my $self = shift;
+
+    my @vectors;
+    my $center  = observation_size / 2;
+    my $grid = $self->obstacles;
+
+    for my $x (0 .. observation_size - 1) {
+        for my $y (0 .. observation_size - 1) {
+            my $pixel = $grid->[ $x + $y * observation_size ];
+            next unless defined $obstacles{ $pixel };
+
+            my $type = $obstacles{ $pixel };
+            my $dx   = $x - $center;
+            my $dy   = $y - $center;
+            my $dv   = sqrt( $dx * $dx + $dy * $dy );
+
+            push @vectors, {
+                in_front   => $dx >= 0,
+                distance   => $dv,
+                distance_x => $dx,
+                distance_y => $dy,
+                type       => $type,
+            };
+        }
+    }
+
+    # Things near in front first, then near in back
+    return [ sort { $b->{in_front} <=> $a->{in_front} 
+                 || $a->{distance} <=> $b->{distance} } @vectors ];
+}
 1;
