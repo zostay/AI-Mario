@@ -156,6 +156,8 @@ Each ceiling may include the followign:
 
 sub get_obstacle {
     my ($self, $x, $y) = @_;
+    no warnings 'uninitialized'; # I know, shut up
+
     return '' if $x < -view_extent or $x >= view_extent 
               or $y < -view_extent or $y >= view_extent;
     return $obstacles{ $self->obstacles->[ 
