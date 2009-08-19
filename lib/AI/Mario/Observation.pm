@@ -49,4 +49,16 @@ sub parse_observation_message {
     return \%args;
 }
 
+sub show_grid {
+    my $self = shift;
+    
+    my $obstacles = $self->obstacles;
+    for my $y (0 .. observation_size - 1) {
+        for my $x (0 .. observation_size - 1) {
+            printf "%4d", $obstacles->[ $x + $y * observation_size ];
+        }
+        print "\n";
+    }
+    print "\n";
+}
 1;
