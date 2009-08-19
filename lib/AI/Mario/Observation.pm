@@ -167,7 +167,7 @@ sub obstacle_summary {
     my $self = shift;
     my (@floors, @ceilings, @walls, @bad_guys, @rises, @drops, @pits);
 
-    my @floor_grid;
+    my @grid;
     for my $y (reverse -view_extent .. view_extent - 2) {
         for my $x (-view_extent .. view_extent - 1) {
             my $type = $self->get_obstacle($x, $y);
@@ -179,9 +179,9 @@ sub obstacle_summary {
             # we have a floor
             my $up_type = $self->get_obstacle($x, $y + 1);
             if ($up_type !~ /wall/) {
-                if ($x > -view_extent and $floor_grid[view_extent + $x - 1][view_extent - $y]) {
-                    $floor_grid[view_extent + $x][view_extent - $y] = $floor_grid[view_extent + $x - 1][view_extent - $y];
-                    $floor_grid[view_extent + $x][view_extent - $y]{right} = $x;
+                if ($x > -view_extent and $grid[view_extent + $x - 1][view_extent - $y]{floor}) {
+                    $grid[view_extent + $x][view_extent - $y]{floor} = $grid[view_extent + $x - 1][view_extent - $y]{floor};
+                    $grid[view_extent + $x][view_extent - $y]{floor}{right} = $x;
                 }
 
                 else {
@@ -191,7 +191,7 @@ sub obstacle_summary {
                         top   => $y,
                     };
                     push @floors, $new_floor;
-                    $floor_grid[$x + view_extent][view_extent - $y] = $new_floor;
+                    $grid[$x + view_extent][view_extent - $y]{floor} = $new_floor;
                 }
             }
         }
