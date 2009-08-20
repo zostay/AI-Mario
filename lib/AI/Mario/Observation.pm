@@ -170,18 +170,16 @@ sub obstacle_summary {
     my (@floors, @ceilings, @walls, @bad_guys, @rises, @drops, @pits);
 
     my @grid;
-    for my $y (reverse - view_extent .. view_extent - 2) {
+    for my $y (reverse - view_extent .. view_extent - 1) {
         for my $x (- view_extent .. view_extent - 1) {
             my $type = $self->get_obstacle($x, $y);
 
             print "MARIO $x $y\n" if $type eq 'mario';
 
-            next unless $type =~ /hard/;
-
             # we have a floor
             my $up_type = $self->get_obstacle($x, $y + 1);
-            if ($up_type !~ /wall/) {
-                if ($x > -view_extent and $grid[view_extent + $x - 1][view_extent - $y]{floor}) {
+            if ($y < view_extent - 2 and $type =~ /wall/ and $up_type !~ /wall/) {
+                if ($x > - view_extent and $grid[view_extent + $x - 1][view_extent - $y]{floor}) {
                     $grid[view_extent + $x][view_extent - $y]{floor} = $grid[view_extent + $x - 1][view_extent - $y]{floor};
                     $grid[view_extent + $x][view_extent - $y]{floor}{right} = $x;
                 }
@@ -196,19 +194,41 @@ sub obstacle_summary {
                     $grid[$x + view_extent][view_extent - $y]{floor} = $new_floor;
                 }
             }
+
+            # we have a ceiling
+            my $down_type = $self->get_obstacle($x, $y - 1);
+            if ($y > 1 - view_extent and $type =~ /hard/ and $down_type !~ /hard/) {
+                if ($x > - view_extent and $grid[view_extent + $x - 1][view_extent - $y]{ceiling}) {
+                    $grid[view_extent + $x][view_extent - $y]{ceiling} = $grid[view_extent + $x - 1][view_extent - $y]{ceilng};
+                    $grid[view_extent + $x][view_extent - $y]{ceiling}{right} = $x;
+                }
+
+                else {
+                    my $new_ceiling = {
+                        left   => $x,
+                        right  => $x,
+                        bottom => $y,
+                    };
+                    push @ceilings, $new_ceiling;
+                    $grid[$x + view_extent][view_extent - $y]{ceiling} = $new_ceiling;
+                }
+            }
         }
     }
 
-    use Data::Dumper;
-    print Dumper(\@floors);
-#    return {
-#        floors   => \@floors,
-#        ceilings => \@ceilings,
+    my $result = {
+        floors   => \@floors,
+        ceilings => \@ceilings,
 #        walls    => \@walls,
 #        bad_guys => \@bad_guys,
 #        rises    => \@rises,
 #        drops    => \@drops,
-#    };
+    };
+
+    use Data::Dumper;
+    print Dumper($result);
+
+    return $result;
 }
 
 1;
