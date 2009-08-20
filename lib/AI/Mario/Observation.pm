@@ -158,8 +158,8 @@ sub get_obstacle {
     my ($self, $x, $y) = @_;
     no warnings 'uninitialized'; # I know, shut up
 
-    return '' if $x < -view_extent or $x >= view_extent 
-              or $y < -view_extent or $y >= view_extent;
+    return '' if $x < - view_extent or $x >= view_extent 
+              or $y < - view_extent or $y >= view_extent;
     return $obstacles{ $self->obstacles->[ 
         ($x + view_extent) + (view_extent - $y) * observation_size 
     ] } || '';
@@ -170,8 +170,8 @@ sub obstacle_summary {
     my (@floors, @ceilings, @walls, @bad_guys, @rises, @drops, @pits);
 
     my @grid;
-    for my $y (reverse -view_extent .. view_extent - 2) {
-        for my $x (-view_extent .. view_extent - 1) {
+    for my $y (reverse - view_extent .. view_extent - 2) {
+        for my $x (- view_extent .. view_extent - 1) {
             my $type = $self->get_obstacle($x, $y);
 
             print "MARIO $x $y\n" if $type eq 'mario';
