@@ -27,7 +27,10 @@ has agent => (
     lazy      => 1,
     default   => sub {
         my $self = shift;
-        my $meta = Class::MOP::load_class($self->agent_class);
+        my $meta = eval { Class::MOP::load_class($self->agent_class) };
+        if (not $meta and $self->agent_class !~ /::/) {
+            $meta = Class::MOP::load_class('AI::Mario::Agent::' . $self->agent_class);
+        }
         return $meta->new_object($self->agent_options);
     },
 );
@@ -52,7 +55,10 @@ has config => (
     lazy      => 1,
     default   => sub {
         my $self = shift;
-        my $meta = Class::MOP::load_class($self->config_class);
+        my $meta = eval { Class::MOP::load_class($self->config_class) };
+        if (not $meta and $self->config_class !~ /::/) {
+            $meta = Class::MOP::load_class('AI::Mario::Config::' . $self->config_class);
+        }
         return $meta->new_object($self->config_options);
     },
 );
