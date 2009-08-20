@@ -66,9 +66,9 @@ sub show_grid {
 my %obstacles = (
     '-10' => 'wall-hard',
     '-11' => 'wall-soft',
-      '1' => 'mario',
-      '2' => 'bad_guys-jump-shoot',
-      '9' => 'bad_guys-shoot',
+      '1' => 'guys-good-mario',
+      '2' => 'guys-bad-jump-shoot',
+      '9' => 'guys-bad-shoot',
      '20' => 'wall-hard-metal',
      '16' => 'wall-hard-brick',
      '21' => 'wall-hard-question',
@@ -251,6 +251,15 @@ sub obstacle_summary {
                     $grid[$x + view_extent][view_extent - $y]{back_wall} = $new_back_wall;
                 }
             }
+
+            if ($type =~ /bad/) {
+                push @bad_guys, {
+                    x          => $x,
+                    y          => $y,
+                    jump_kill  => $type =~ /jump/,
+                    shoot_kill => $type =~ /shoot/,
+                };
+            }
         }
     }
 
@@ -259,8 +268,7 @@ sub obstacle_summary {
         ceilings    => \@ceilings,
         front_walls => \@front_walls,
         back_walls  => \@back_walls,
-#        walls    => \@walls,
-#        bad_guys => \@bad_guys,
+        bad_guys    => \@bad_guys,
 #        rises    => \@rises,
 #        drops    => \@drops,
     };
