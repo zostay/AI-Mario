@@ -1,6 +1,8 @@
 package AI::Mario::Observation;
 use Moose;
 
+use Scalar::Util qw( weaken );
+
 use constant observation_size => 22;
 use constant view_extent      => 11;
 
@@ -167,9 +169,11 @@ sub get_obstacle {
 
 sub obstacle_summary {
     my $self = shift;
-    my (@floors, @ceilings, @front_walls, @back_walls, @bad_guys, @rises, @drops, @pits);
+    my (@floors, @ceilings, @front_walls, @back_walls, @bad_guys, %rises, %drops, %pits);
 
     my @grid;
+    my $grid = sub { $grid[view_extent + $_[0]][view_extent - $_[1]] ||= {} };
+
     for my $y (reverse - view_extent .. view_extent - 1) {
         for my $x (- view_extent .. view_extent - 1) {
             my $type = $self->get_obstacle($x, $y);
@@ -179,9 +183,9 @@ sub obstacle_summary {
             # we have a floor
             my $up_type = $self->get_obstacle($x, $y + 1);
             if ($y < view_extent - 2 and $type =~ /wall/ and $up_type !~ /wall/) {
-                if ($x > - view_extent and $grid[view_extent + $x - 1][view_extent - $y]{floor}) {
-                    $grid[view_extent + $x][view_extent - $y]{floor} = $grid[view_extent + $x - 1][view_extent - $y]{floor};
-                    $grid[view_extent + $x][view_extent - $y]{floor}{right} = $x;
+                if ($x > - view_extent and $grid->($x - 1, $y)->{floor}) {
+                    $grid->($x, $y)->{floor} = $grid->($x - 1, $y)->{floor};
+                    $grid->($x, $y)->{floor}{right} = $x;
                 }
 
                 else {
@@ -191,16 +195,16 @@ sub obstacle_summary {
                         top   => $y,
                     };
                     push @floors, $new_floor;
-                    $grid[$x + view_extent][view_extent - $y]{floor} = $new_floor;
+                    $grid->($x, $y)->{floor} = $new_floor;
                 }
             }
 
             # we have a ceiling
             my $down_type = $self->get_obstacle($x, $y - 1);
             if ($y > - view_extent and $type =~ /hard/ and $down_type !~ /hard/) {
-                if ($x > - view_extent and $grid[view_extent + $x - 1][view_extent - $y]{ceiling}) {
-                    $grid[view_extent + $x][view_extent - $y]{ceiling} = $grid[view_extent + $x - 1][view_extent - $y]{ceilng};
-                    $grid[view_extent + $x][view_extent - $y]{ceiling}{right} = $x;
+                if ($x > - view_extent and $grid->($x - 1, $y)->{ceiling}) {
+                    $grid->($x, $y)->{ceiling} = $grid->($x - 1, $y)->{ceilng};
+                    $grid->($x, $y)->{ceiling}{right} = $x;
                 }
 
                 else {
@@ -210,16 +214,16 @@ sub obstacle_summary {
                         bottom => $y,
                     };
                     push @ceilings, $new_ceiling;
-                    $grid[$x + view_extent][view_extent - $y]{ceiling} = $new_ceiling;
+                    $grid->($x, $y)->{ceiling} = $new_ceiling;
                 }
             }
 
             # we have a front wall
             my $left_type = $self->get_obstacle($x - 1, $y);
             if ($x > - view_extent and $type =~ /hard/ and $left_type !~ /hard/) {
-                if ($y < view_extent - 1 and $grid[view_extent + $x][view_extent - $y - 1]{front_wall}) {
-                    $grid[view_extent + $x][view_extent - $y]{front_wall} = $grid[view_extent + $x][view_extent - $y - 1]{front_wall};
-                    $grid[view_extent + $x][view_extent - $y]{front_wall}{bottom} = $y;
+                if ($y < view_extent - 1 and $grid->($x, $y - 1)->{front_wall}) {
+                    $grid->($x, $y)->{front_wall} = $grid->($x, $y - 1)->{front_wall};
+                    $grid->($x, $y)->{front_wall}{bottom} = $y;
                 }
 
                 else {
@@ -229,16 +233,16 @@ sub obstacle_summary {
                         bottom => $y,
                     };
                     push @front_walls, $new_front_wall;
-                    $grid[$x + view_extent][view_extent - $y]{front_wall} = $new_front_wall;
+                    $grid->($x, $y)->{front_wall} = $new_front_wall;
                 }
             }
 
             # we have a back wall
             my $right_type = $self->get_obstacle($x - 1, $y);
             if ($x < view_extent - 2 and $type =~ /hard/ and $right_type !~ /hard/) {
-                if ($y < view_extent - 1 and $grid[view_extent + $x][view_extent - $y - 1]{back_wall}) {
-                    $grid[view_extent + $x][view_extent - $y]{back_wall} = $grid[view_extent + $x][view_extent - $y - 1]{back_wall};
-                    $grid[view_extent + $x][view_extent - $y]{back_wall}{bottom} = $y;
+                if ($y < view_extent - 1 and $grid->($x, $y - 1)->{back_wall}) {
+                    $grid->($x, $y)->{back_wall} = $grid->($x, $y - 1)->{back_wall};
+                    $grid->($x, $y)->{back_wall}{bottom} = $y;
                 }
 
                 else {
@@ -248,7 +252,7 @@ sub obstacle_summary {
                         bottom => $y,
                     };
                     push @back_walls, $new_back_wall;
-                    $grid[$x + view_extent][view_extent - $y]{back_wall} = $new_back_wall;
+                    $grid->($x, $y)->{back_wall} = $new_back_wall;
                 }
             }
 
@@ -263,18 +267,108 @@ sub obstacle_summary {
         }
     }
 
+    # Look for some more interesting information
+    for my $floor (@floors) {
+        if ($floor->{left} <= 0 and $floor->{right} >= 0) {
+            $floor->{below_mario} = $floor->{top} < 0;
+            $floor->{above_mario} = $floor->{top} > 0;
+            $floor->{standing_on} = $floor->{top} = -1 and $self->is_grounded;
+        }
+
+        else {
+            $floor->{below_mario} = $floor->{above_mario} = $floor->{standing_on} = '';
+        }
+    }
+
+    # Eliminate ceilings that are below us, who cares?
+    @ceilings = grep { $_->{bottom} > 0 } @ceilings;
+
+    # Look for some more interesting information
+    for my $ceiling (@ceilings) {
+        $ceiling->{above_mario} = $ceiling->{bottom} >  0
+                               && $ceiling->{left}   <= 0 
+                               && $ceiling->{right}  >= 0;
+    }
+
+    # Look for some more interesting information
+    for my $wall (@front_walls) {
+        if ($wall->{left} < view_extent - 1 and $grid->($wall->{left} + 1, $wall->{top})->{floor}) {
+            $wall->{floor_rise} = 1;
+            $wall->{end} = $grid->($wall->{left} + 1, $wall->{top})->{floor};
+            $wall->{end}{begin} = $wall;
+            weaken($wall->{end});
+            weaken($wall->{end}{begin});
+        }
+        if ($wall->{left} > - view_extent and $wall->{bottom} > - view_extent and $grid->($wall->{left} - 1, $wall->{bottom} - 1)->{floor}) {
+            $wall->{floor_rise} = 1;
+            $wall->{begin} = $grid->($wall->{left} - 1, $wall->{bottom} - 1)->{floor};
+            $wall->{begin}{end} = $wall;
+            weaken($wall->{begin});
+            weaken($wall->{begin}{end});
+        }
+
+        if ($wall->{left} < view_extent - 1 and $grid->($wall->{left} + 1, $wall->{bottom})->{ceiling}) {
+            $wall->{ceiling_drop} = 1;
+        }
+        if ($wall->{left} > - view_extent and $wall->{top} < view_extent - 1 and $grid->($wall->{left} - 1, $wall->{top} + 1)->{ceiling}) {
+            $wall->{ceiling_drop} = 1;
+        }
+    }
+
+    # Look for some more interesting information
+    for my $wall (@back_walls) {
+        if ($wall->{right} < view_extent - 1 and $grid->($wall->{right} + 1, $wall->{top})->{floor}) {
+            $wall->{floor_drop} = 1;
+            $wall->{end} = $grid->($wall->{right} + 1, $wall->{top})->{floor};
+            $wall->{end}{begin} = $wall;
+            weaken($wall->{end});
+            weaken($wall->{end}{begin});
+        }
+        if ($wall->{right} < view_extent - 1 and $wall->{bottom} > - view_extent and $grid->($wall->{right} + 1, $wall->{bottom} - 1)->{floor}) {
+            $wall->{floor_drop} = 1;
+            $wall->{begin} = $grid->($wall->{right} + 1, $wall->{bottom} - 1)->{floor};
+            $wall->{begin}{end} = $wall;
+            weaken($wall->{end});
+            weaken($wall->{end}{begin});
+        }
+
+        if ($wall->{right} > - view_extent and $grid->($wall->{right} - 1, $wall->{bottom})->{ceiling}) {
+            $wall->{ceiling_rise} = 1;
+        }
+        if ($wall->{right} < view_extent - 1 and $wall->{top} < view_extent - 1 and $grid->($wall->{right} + 1, $wall->{top} + 1)->{ceiling}) {
+            $wall->{ceiling_rise} = 1;
+        }
+    }
+
+    for my $floor (@floors) {
+        if ($floor->{begin}) {
+            $drops{$floor->{left}}++ if $floor->{begin}{floor_drop};
+            $rises{$floor->{left}}++ if $floor->{begin}{floor_rise};
+        }
+        if ($floor->{end}) {
+            $drops{$floor->{right}}++ if $floor->{end}{floor_drop};
+            $rises{$floor->{right}}++ if $floor->{end}{floor_rise};
+            $pits{$floor->{right}}++  if $floor->{end}{floor_drop} and not $floor->{end}{end};
+        }
+
+        if ($floor->{left} == - view_extent) {
+            $floor->{begin} = 'EDGE';
+        }
+        if ($floor->{right} == view_extent - 1) {
+            $floor->{end} = 'EGDE';
+        }
+    }
+
     my $result = {
         floors      => \@floors,
         ceilings    => \@ceilings,
         front_walls => \@front_walls,
         back_walls  => \@back_walls,
         bad_guys    => \@bad_guys,
-#        rises    => \@rises,
-#        drops    => \@drops,
+        rises       => [ sort keys %rises ],
+        drops       => [ sort keys %drops ],
+        pits        => [ sort keys %pits ],
     };
-
-    use Data::Dumper;
-    print Dumper($result);
 
     return $result;
 }
