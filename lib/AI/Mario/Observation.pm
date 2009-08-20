@@ -167,7 +167,7 @@ sub get_obstacle {
 
 sub obstacle_summary {
     my $self = shift;
-    my (@floors, @ceilings, @walls, @bad_guys, @rises, @drops, @pits);
+    my (@floors, @ceilings, @front_walls, @back_walls, @bad_guys, @rises, @drops, @pits);
 
     my @grid;
     for my $y (reverse - view_extent .. view_extent - 1) {
@@ -197,7 +197,7 @@ sub obstacle_summary {
 
             # we have a ceiling
             my $down_type = $self->get_obstacle($x, $y - 1);
-            if ($y > 1 - view_extent and $type =~ /hard/ and $down_type !~ /hard/) {
+            if ($y > - view_extent and $type =~ /hard/ and $down_type !~ /hard/) {
                 if ($x > - view_extent and $grid[view_extent + $x - 1][view_extent - $y]{ceiling}) {
                     $grid[view_extent + $x][view_extent - $y]{ceiling} = $grid[view_extent + $x - 1][view_extent - $y]{ceilng};
                     $grid[view_extent + $x][view_extent - $y]{ceiling}{right} = $x;
@@ -213,12 +213,38 @@ sub obstacle_summary {
                     $grid[$x + view_extent][view_extent - $y]{ceiling} = $new_ceiling;
                 }
             }
+
+            # we have a front wall
+            my $left_type = $self->get_obstacle($x - 1, $y);
+            if ($x > - view_extent and $type =~ /hard/ and $left_type !~ /hard/) {
+                print "LOOKING AT ($x, @{[$y + 1]})\n";
+                print "$y < @{[view_extent - 1]}?\n";
+                print "FIND: $grid[view_extent + $x][view_extent - $y - 1]{front_wall}\n";
+                if ($y < view_extent - 1 and $grid[view_extent + $x][view_extent - $y - 1]{front_wall}) {
+                    $grid[view_extent + $x][view_extent - $y]{front_wall} = $grid[view_extent + $x][view_extent - $y - 1]{front_wall};
+                    $grid[view_extent + $x][view_extent - $y]{front_wall}{bottom} = $y;
+                }
+
+                else {
+                    my $new_front_wall = {
+                        left   => $x,
+                        top    => $y,
+                        bottom => $y,
+                    };
+                    push @front_walls, $new_front_wall;
+                    print "ADDING AT ($x, $y)\n";
+                    $grid[$x + view_extent][view_extent - $y]{front_wall} = $new_front_wall;
+                    print "SET: $grid[view_extent + $x][view_extent - $y]{front_wall}\n";
+                }
+                    print "STILL?: $grid[view_extent + $x][view_extent - $y]{front_wall}\n";
+            }
         }
     }
 
     my $result = {
-        floors   => \@floors,
-        ceilings => \@ceilings,
+        floors     => \@floors,
+        ceilings   => \@ceilings,
+        front_wall => \@front_walls,
 #        walls    => \@walls,
 #        bad_guys => \@bad_guys,
 #        rises    => \@rises,
