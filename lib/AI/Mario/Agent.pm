@@ -1,39 +1,43 @@
 package AI::Mario::Agent;
 use Moose::Role;
 
+use Moose::Util::TypeConstraints;
+
 requires qw( reset update name fitness );
+
+subtype Control => as Int => where { $_ eq '0' or $_ eq '1' };
 
 has left => (
     is       => 'rw',
-    isa      => 'Bool',
+    isa      => 'Control',
     required => 1,
     default  => 0,
 );
 
 has right => (
     is       => 'rw',
-    isa      => 'Bool',
+    isa      => 'Control',
     required => 1,
     default  => 0,
 );
 
 has duck => (
     is       => 'rw',
-    isa      => 'Bool',
+    isa      => 'Control',
     required => 1,
     default  => 0,
 );
 
 has jump => (
     is       => 'rw',
-    isa      => 'Bool',
+    isa      => 'Control',
     required => 1,
     default  => 0,
 );
 
 has run => (
     is       => 'rw',
-    isa      => 'Bool',
+    isa      => 'Control',
     required => 1,
     default  => 0,
 );
