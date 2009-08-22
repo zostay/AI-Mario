@@ -133,6 +133,9 @@ on received => sub {
         my $config = $self->config;
         $config->reset;
 
+        my $agent = $self->agent;
+        $agent->reset;
+
         my $string = $config->as_string;
         print "Sending reset... [$string]\n";
         tell_mario("reset $string");
